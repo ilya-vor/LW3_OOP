@@ -1,4 +1,6 @@
 ﻿#include <iostream>
+#include <chrono>
+#include <cstdlib>
 
 class Object {
 public:
@@ -8,32 +10,53 @@ public:
 
 class Storage : public Object {
 private:
-    int current_index = 0;
+    int index_last = 0;
     int capacity = 10;
+    int current_index = 0;
     Object** container;
 public:
     Storage() : container(new Object* [capacity]) {}
     void show_properties() {
-        printf("[Storage::void show_properties()] current_index = %d, capacity = %d\n", current_index, capacity);
+        printf("[Storage::void show_properties()] index_last = %d, capacity = %d\n", index_last, capacity);
     }
+    
+    void show() {
+        for (int i = 0; i < index_last; i++) {
+            std::cout << "[" << i << "] = ";
+            container[i]->show_properties();
+            std::cout << "\n";
+        }
+    }
+
     void push_back(Object* obj) {
-        if (current_index < capacity) {
-            container[current_index] = obj;
-            current_index++;
+        if (index_last < capacity) {
+            container[index_last] = obj;
+            index_last++;
         }
         else {
             Object** new_container = new Object * [capacity * 2];
             for (int i = 0; i < capacity; i++) {
                 new_container[i] = container[i];
             }
-            new_container[current_index] = obj;
-            current_index++;
+            new_container[index_last] = obj;
+            index_last++;
             container = new_container;
             capacity *= 2;
         }
     }
+    void push_middle(Object* obj) {
+         show();
+         int middle_index = index_last / 2;
+         push_back(container[index_last]);
+         index_last++;
+         for (int i = index_last - 1; i > middle_index; i--) {
+             container[i] = container[i - 1];
+        }
+         container[middle_index] = obj;
+         show();
+    }
     ~Storage() override{
-        for (int i = 0; i < current_index; i++) {
+        for (int i = 0; i < index_last; i++) {
             delete (container[i]);
         }
     }
@@ -62,6 +85,20 @@ public:
 
 int main()
 {
-       
+    setlocale(NULL,"RU");
+    auto start = std::chrono::steady_clock::now();
+    
+    Storage* storage = new Storage();
+    for (int i = 0; i < 3;  i++) {
+        Point* p = new Point(rand() % 10, rand() % 10);
+        storage->push_back(p);
+    }
+    Point* p = new Point(rand() % 10, rand() % 10);
+    storage->push_middle(p);
+    
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Программа выполнялась " << duration.count() << " миллисекунд\n";
+
 
 }
