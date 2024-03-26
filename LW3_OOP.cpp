@@ -10,53 +10,78 @@ public:
 
 class Storage : public Object {
 private:
-    int index_last = 0;
+    int index_last_emty_cell = 0;
     int capacity = 10;
     int current_index = 0;
     Object** container;
+private:
+    void capacityX2() {
+        Object** new_container = new Object * [capacity * 2];
+        for (int i = 0; i < capacity; i++) {
+            new_container[i] = container[i];
+        }
+        capacity *= 2;
+        container = new_container;
+        new_container = nullptr;
+    }
+    void move_all_cells_to_the_right(int starting_from) {
+        push_back(container[index_last_emty_cell]);
+        for (int i = index_last_emty_cell - 1; i > starting_from; i--) {
+            container[i] = container[i - 1];
+        }
+    }
+
 public:
     Storage() : container(new Object* [capacity]) {}
     void show_properties() {
-        printf("[Storage::void show_properties()] index_last = %d, capacity = %d\n", index_last, capacity);
+        printf("[Storage::void show_properties()] index_last_emty_cell = %d, capacity = %d\n", index_last_emty_cell, capacity);
     }
     
     void show() {
-        for (int i = 0; i < index_last; i++) {
+        for (int i = 0; i < index_last_emty_cell; i++) {
             std::cout << "[" << i << "] = ";
-            container[i]->show_properties();
+            if (container[i] != nullptr) {
+                container[i]->show_properties();
+            }
             std::cout << "\n";
         }
     }
 
     void push_back(Object* obj) {
-        if (index_last < capacity) {
-            container[index_last] = obj;
-            index_last++;
+        if (index_last_emty_cell >= capacity) {
+            capacityX2();
+        }
+        container[index_last_emty_cell] = obj;
+        index_last_emty_cell++;
+    }
+
+    void push_middle(Object* obj) {
+        if (index_last_emty_cell >= capacity) {
+            capacityX2();
+        }
+         int middle_index = index_last_emty_cell / 2;
+         move_all_cells_to_the_right(middle_index);
+         container[middle_index] = obj;
+    }
+    void push_forward(Object* obj) {
+        move_all_cells_to_the_right(0);
+        container[0] = obj;
+    }
+    void insert_index(Object* obj, int index) {
+        if (index < 0) {
+            printf("Ошибка: Вы ввели отрицательный индекс %d. Индекс не может быть отрицательным. Операция не была выполнена.\n", index);
+        }
+        else if (index > capacity - 1) {
+            printf("Ошибка: Вы ввели индекс %d. Последний индекс для текущего массива это %d. Операция не была выполнена.\n", index, index_last_emty_cell - 1);
         }
         else {
-            Object** new_container = new Object * [capacity * 2];
-            for (int i = 0; i < capacity; i++) {
-                new_container[i] = container[i];
-            }
-            new_container[index_last] = obj;
-            index_last++;
-            container = new_container;
-            capacity *= 2;
+            move_all_cells_to_the_right(index);
+            container[index] = obj;
         }
     }
-    void push_middle(Object* obj) {
-         show();
-         int middle_index = index_last / 2;
-         push_back(container[index_last]);
-         index_last++;
-         for (int i = index_last - 1; i > middle_index; i--) {
-             container[i] = container[i - 1];
-        }
-         container[middle_index] = obj;
-         show();
-    }
+
     ~Storage() override{
-        for (int i = 0; i < index_last; i++) {
+        for (int i = 0; i < index_last_emty_cell; i++) {
             delete (container[i]);
         }
     }
@@ -64,13 +89,13 @@ public:
 
 class Point: public Object {
 private:
-    int x, y;
+    int x, y, id;
 public:
-    Point(): x(0), y(0) {}
-    Point(int x, int y): x(x), y(y) {}
-    Point(const Point& p): x(p.x), y(p.y) {}
+    Point() : x(0), y(0), id(rand() % 100) {}
+    Point(int x, int y): x(x), y(y), id(rand() % 100) {}
+    Point(const Point& p): x(p.x), y(p.y), id(rand() % 100)  {}
     void show_properties() {
-        printf("[Point::show()] x = %d, y = %d\n", x, y);
+        printf("[Point::show()] id = %d, x = %d, y = %d\n",id, x, y);
     }
     void set_properties(int x, int y) {
         this->x = x;
@@ -93,8 +118,10 @@ int main()
         Point* p = new Point(rand() % 10, rand() % 10);
         storage->push_back(p);
     }
+    storage->show();
     Point* p = new Point(rand() % 10, rand() % 10);
-    storage->push_middle(p);
+    storage->push_index(p, 4);
+    storage->show();
     
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
