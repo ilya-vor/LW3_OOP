@@ -15,6 +15,18 @@ private:
     int current_index = 0;
     Object** container;
 private:
+    bool validation_index(int index) {
+        if (index < 0) {
+            printf("Ошибка: Вы ввели отрицательный индекс %d. Индекс не может быть отрицательным. Операция не была выполнена.\n", index);
+            return false;
+        }
+        else if (index > index_last_emty_cell - 1) {
+            printf("Ошибка: Вы ввели индекс %d. Последний индекс для текущего массива это %d. Операция не была выполнена.\n", index, index_last_emty_cell - 1);
+            return false;
+        }
+        return true;
+    }
+
     void capacityX2() {
         Object** new_container = new Object * [capacity * 2];
         for (int i = 0; i < capacity; i++) {
@@ -31,6 +43,16 @@ private:
         }
     }
 
+    void move_all_cells_to_the_left(int starting_from) {
+        if (starting_from != index_last_emty_cell - 1) {
+            for (int i = starting_from; i < index_last_emty_cell - 1; i++) {
+                container[i] = container[i + 1];
+            }
+            container[index_last_emty_cell - 1] = nullptr;
+            index_last_emty_cell--;
+        }
+    }
+
 public:
     Storage() : container(new Object* [capacity]) {}
     void show_properties() {
@@ -38,12 +60,12 @@ public:
     }
     
     void show() {
+        std::cout << "[Storage::show()]\n";
         for (int i = 0; i < index_last_emty_cell; i++) {
             std::cout << "[" << i << "] = ";
             if (container[i] != nullptr) {
                 container[i]->show_properties();
             }
-            std::cout << "\n";
         }
     }
 
@@ -63,26 +85,61 @@ public:
          move_all_cells_to_the_right(middle_index);
          container[middle_index] = obj;
     }
+
     void push_forward(Object* obj) {
         move_all_cells_to_the_right(0);
         container[0] = obj;
     }
+
     void insert_index(Object* obj, int index) {
-        if (index < 0) {
-            printf("Ошибка: Вы ввели отрицательный индекс %d. Индекс не может быть отрицательным. Операция не была выполнена.\n", index);
-        }
-        else if (index > capacity - 1) {
-            printf("Ошибка: Вы ввели индекс %d. Последний индекс для текущего массива это %d. Операция не была выполнена.\n", index, index_last_emty_cell - 1);
-        }
-        else {
+        if (validation_index(index)) {
             move_all_cells_to_the_right(index);
             container[index] = obj;
         }
     }
 
+    Object* copy_object_adress(int index) {
+        if (validation_index(index)) {
+            return container[index];
+        }
+        else {
+            return nullptr;
+        }
+    }
+
+    Object* cut_object_adress(int index) {
+        if (validation_index(index)) {
+            Object *obj = container[index];
+            move_all_cells_to_the_left(index);
+            return obj;
+        }
+        else {
+            return nullptr;
+        }
+    }
+    void delete_objects(int first, int last) {
+        for (int i = first; i <= last; i++) {
+            delete container[first];
+            container[first] = nullptr;
+            move_all_cells_to_the_left(first);
+        }
+    }
+    void delete_object(int index) {
+        this->delete_objects(index, index);
+    }
+
+    void call_method_for_everyone(void(Object::* method)()) {
+        for (int i = 0; i < index_last_emty_cell; i++) {
+            if (container[i] != nullptr) {
+                (container[i]->*method)();
+            }
+        }
+    }
+
     ~Storage() override{
         for (int i = 0; i < index_last_emty_cell; i++) {
-            delete (container[i]);
+            delete container[i];
+            container[i] = nullptr;
         }
     }
 };
@@ -119,9 +176,10 @@ int main()
         storage->push_back(p);
     }
     storage->show();
-    Point* p = new Point(rand() % 10, rand() % 10);
-    storage->push_index(p, 4);
+    //storage->cut_object_adress(2)->show_properties();
+    storage->delete_objects(1,2);
     storage->show();
+    //storage->call_method_for_everyone(&Object::show_properties);
     
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
