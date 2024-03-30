@@ -12,7 +12,6 @@ class Storage : public Object {
 private:
     int index_last_emty_cell = 0;
     int capacity = 10;
-    int current_index = 0;
     Object** container;
 private:
     bool validation_index(int index) {
@@ -26,7 +25,6 @@ private:
         }
         return true;
     }
-
     void capacityX2() {
         Object** new_container = new Object * [capacity * 2];
         for (int i = 0; i < capacity; i++) {
@@ -42,7 +40,6 @@ private:
             container[i] = container[i - 1];
         }
     }
-
     void move_all_cells_to_the_left(int starting_from) {
         if (starting_from != index_last_emty_cell - 1) {
             for (int i = starting_from; i < index_last_emty_cell - 1; i++) {
@@ -52,13 +49,12 @@ private:
             index_last_emty_cell--;
         }
     }
-
 public:
     Storage() : container(new Object* [capacity]) {}
-    void show_properties() {
+    Storage(int len) : container(new Object* [len]), capacity(len) {}
+    void show_properties() override {
         printf("[Storage::void show_properties()] index_last_emty_cell = %d, capacity = %d\n", index_last_emty_cell, capacity);
     }
-    
     void show() {
         std::cout << "[Storage::show()]\n";
         for (int i = 0; i < index_last_emty_cell; i++) {
@@ -68,7 +64,6 @@ public:
             }
         }
     }
-
     void push_back(Object* obj) {
         if (index_last_emty_cell >= capacity) {
             capacityX2();
@@ -76,7 +71,6 @@ public:
         container[index_last_emty_cell] = obj;
         index_last_emty_cell++;
     }
-
     void push_middle(Object* obj) {
         if (index_last_emty_cell >= capacity) {
             capacityX2();
@@ -85,19 +79,16 @@ public:
          move_all_cells_to_the_right(middle_index);
          container[middle_index] = obj;
     }
-
     void push_forward(Object* obj) {
         move_all_cells_to_the_right(0);
         container[0] = obj;
     }
-
     void insert_index(Object* obj, int index) {
         if (validation_index(index)) {
             move_all_cells_to_the_right(index);
             container[index] = obj;
         }
     }
-
     Object* copy_object_adress(int index) {
         if (validation_index(index)) {
             return container[index];
@@ -106,7 +97,6 @@ public:
             return nullptr;
         }
     }
-
     Object* cut_object_adress(int index) {
         if (validation_index(index)) {
             Object *obj = container[index];
@@ -127,7 +117,11 @@ public:
     void delete_object(int index) {
         this->delete_objects(index, index);
     }
-
+    void set_object(int index, Object* obj) {
+        if (validation_index(index)) {
+            container[index] = obj;
+        }
+    }
     void call_method_for_everyone(void(Object::* method)()) {
         for (int i = 0; i < index_last_emty_cell; i++) {
             if (container[i] != nullptr) {
@@ -135,12 +129,12 @@ public:
             }
         }
     }
-
     ~Storage() override{
         for (int i = 0; i < index_last_emty_cell; i++) {
             delete container[i];
             container[i] = nullptr;
         }
+        container = nullptr;
     }
 };
 
@@ -165,12 +159,34 @@ public:
     ~Point() override{}
 };
 
+
+class Section: public Object {
+private:
+    Point* strt;
+    Point* end;
+public:
+    Section() : strt(new Point()), end(new Point()) { }
+    Section(int x1, int y1, int x2, int y2) : strt(new Point(x1, y1)), end(new Point(x2, y2)) { }
+    Section(const Section& s) : strt(new Point(*(s.strt))), end(new Point(*(s.end))) { }
+    void show_properties() override{
+        printf("[Section::show()]\n");
+        strt->show_properties();
+        end->show_properties();
+    }
+    ~Section() {
+        delete(strt);
+        delete(end);
+        strt = nullptr;
+        end = nullptr;
+    }
+};
+
 int main()
 {
     setlocale(NULL,"RU");
     auto start = std::chrono::steady_clock::now();
     
-    Storage* storage = new Storage();
+    Storage* storage = new Storage(10);
     for (int i = 0; i < 3;  i++) {
         Point* p = new Point(rand() % 10, rand() % 10);
         storage->push_back(p);
@@ -181,6 +197,7 @@ int main()
     storage->show();
     //storage->call_method_for_everyone(&Object::show_properties);
     
+    delete storage;
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "Программа выполнялась " << duration.count() << " миллисекунд\n";
